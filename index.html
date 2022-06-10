@@ -37,10 +37,10 @@
                 <th scope="col">Latest Version</th>
                 <th scope="col">Pythons</th>
                 <th scope="col">Platforms</th>
-                <th scope="col">Linux Support Added</th>
-                <th scope="col">Mac Support Added</th>
-                <th scope="col">Mac M1 Support Added</th>
-                <th scope="col">Windows Support Added</th>
+                <th scope="col">Linux Wheel Added</th>
+                <th scope="col">Mac Wheel Added</th>
+                <th scope="col">Mac M1 Wheel Added</th>
+                <th scope="col">Windows Wheel Added</th>
               </tr>
             </thead>
             <tbody>
@@ -49,10 +49,10 @@
                 <td id="latest_version"></td>
                 <td id="latest_pythons"></td>
                 <td id="latest_platforms"></td>
-                <td id="linux_support_added"></td>
-                <td id="mac_support_added"></td>
-                <td id="mac_m1_support_added"></td>
-                <td id="windows_support_added"></td>
+                <td id="linux_wheel_added"></td>
+                <td id="mac_wheel_added"></td>
+                <td id="mac_m1_wheel_added"></td>
+                <td id="windows_wheel_added"></td>
               </tr>
             </tbody>
           </table>
@@ -97,10 +97,10 @@
                 'latest_version': response_json['info']['version'],
                 'latest_pythons': sorted_releases[-1]['pythons'],
                 'latest_platforms': sorted_releases[-1]['platforms'],
-                'linux_support_added': next((sr['version'] for sr in sorted_releases if sr['linux_support']), ''),
-                'mac_support_added': next((sr['version'] for sr in sorted_releases if sr['mac_support']), ''),
-                'mac_m1_support_added': next((sr['version'] for sr in sorted_releases if sr['mac_m1_support']), ''),
-                'windows_support_added': next((sr['version'] for sr in sorted_releases if sr['windows_support']), ''),
+                'linux_wheel_added': next((sr['version'] for sr in sorted_releases if sr['linux_support']), ''),
+                'mac_wheel_added': next((sr['version'] for sr in sorted_releases if sr['mac_support']), ''),
+                'mac_m1_wheel_added': next((sr['version'] for sr in sorted_releases if sr['mac_m1_support']), ''),
+                'windows_wheel_added': next((sr['version'] for sr in sorted_releases if sr['windows_support']), ''),
             }
             for key in data.keys():
                 if isinstance(data[key], list):
