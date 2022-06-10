@@ -1,0 +1,120 @@
+<html>
+  <head>
+    <title>HTML Forms with PyScript</title>
+    <!-- bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
+    <!-- pyscript -->
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <py-env>
+      - wheel-filename
+    </py-env>
+  </head>
+  <body>
+    <div class="container col-xl-10 col-xxl-8 mt-3">
+      <div class="row align-items-center mb-4">
+        <div class="col-lg-7 text-center text-lg-start">
+          <h1 class="display-4 fw-bold">Check Python package support</h1>
+          <p class="fs-4">Enter package name to identify Python and platform versions supported (ie. Apple Silicon M1/ARM).</p>
+        </div>
+        <div class="col-md-10 col-lg-5">
+          <form id="package-search" class="p-4 border rounded-3 bg-light" onsubmit="return false">
+            <div class="form-floating mb-3">
+              <input type="text" class="form-control" id="packageName" placeholder="numpy">
+              <label for="packageName">Package Name</label>
+            </div>
+            <button id="packageSearch" class="w-100 btn btn-lg btn-primary" type="submit">Search</button>
+          </form>
+        </div>
+      </div>
+      <div class="row">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Latest Version</th>
+                <th scope="col">Pythons</th>
+                <th scope="col">Platforms</th>
+                <th scope="col">Linux Support Added</th>
+                <th scope="col">Mac Support Added</th>
+                <th scope="col">Mac M1 Support Added</th>
+                <th scope="col">Windows Support Added</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="package_name"></td>
+                <td id="latest_version"></td>
+                <td id="latest_pythons"></td>
+                <td id="latest_platforms"></td>
+                <td id="linux_support_added"></td>
+                <td id="mac_support_added"></td>
+                <td id="mac_m1_support_added"></td>
+                <td id="windows_support_added"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <py-script>
+        import asyncio
+        import json
+        import logging
+        import re
+        from wheel_filename import parse_wheel_filename, InvalidFilenameError
+        from pyodide import create_proxy
+        from pyodide.http import pyfetch
+
+        async def search(*args,**kwargs):
+            response = await pyfetch("https://pypi.org/pypi/{}/json".format(Element('packageName').value))
+            response_json = await response.json()
+            releases_wheels = []
+            for release, wheels in response_json['releases'].items():
+                pythons = set()
+                platforms = set()
+                for wheel in wheels:
+                    try:
+                        pw = parse_wheel_filename(wheel['filename'])
+                        pythons.update(pw.python_tags)
+                        platforms.update(pw.platform_tags)
+                    except InvalidFilenameError:
+                        pass
+                releases_wheels.append({
+                    'version': release,
+                    'pythons': sorted(pythons),
+                    'platforms': sorted(platforms),
+                    'linux_support': any(re.match("^manylinux", p) for p in platforms),
+                    'mac_support': any(re.match("^macosx", p) for p in platforms),
+                    'mac_m1_support': any(re.match("macosx_.*_arm64", p) for p in platforms),
+                    'windows_support': any(re.match("^win", p) for p in platforms),
+                })
+            sorted_releases = sorted(releases_wheels, key=lambda d: d['version']) 
+            data = {
+                'package_name': response_json['info']['name'],
+                'latest_version': response_json['info']['version'],
+                'latest_pythons': sorted_releases[-1]['pythons'],
+                'latest_platforms': sorted_releases[-1]['platforms'],
+                'linux_support_added': next((sr['version'] for sr in sorted_releases if sr['linux_support']), ''),
+                'mac_support_added': next((sr['version'] for sr in sorted_releases if sr['mac_support']), ''),
+                'mac_m1_support_added': next((sr['version'] for sr in sorted_releases if sr['mac_m1_support']), ''),
+                'windows_support_added': next((sr['version'] for sr in sorted_releases if sr['windows_support']), ''),
+            }
+            for key in data.keys():
+                if isinstance(data[key], list):
+                    data_list = document.createElement('ul')
+                    for item_text in data[key]:
+                        list_item = document.createElement('li')
+                        list_item.innerHTML = item_text
+                        data_list.appendChild(list_item)
+                    Element(key).element.appendChild(data_list)
+                elif isinstance(data[key], str):
+                    pyscript.write(key, data[key])
+    
+        form = document.getElementById("package-search")
+        form.addEventListener("submit", create_proxy(search))
+    </py-script>
+  </body>
+</html>
